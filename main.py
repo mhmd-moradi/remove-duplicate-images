@@ -94,3 +94,23 @@ def preprocess_dataset(image_folder):
         images_by_camera_id[camera_id] = sorted_images
 
     return images_by_camera_id
+
+def compare_frames_change_detection(prev_frame, next_frame, min_contour_area):
+    frame_delta = cv2.absdiff(prev_frame, next_frame)
+    thresh = cv2.threshold(frame_delta, 45, 255, cv2.THRESH_BINARY)[1]
+
+    thresh = cv2.dilate(thresh, None, iterations=2)
+    cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,
+                            cv2.CHAIN_APPROX_SIMPLE)
+    cnts = imutils.grab_contours(cnts)
+
+    score = 0
+    res_cnts = []
+    for c in cnts:
+        if cv2.contourArea(c) < min_contour_area:
+            continue
+
+        res_cnts.append(c)
+        score += cv2.contourArea(c)
+
+    return score, res_cnts, thresh
