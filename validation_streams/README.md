@@ -1,0 +1,1 @@
+### Validation videos to verify if the duplicate images are identified correctly
