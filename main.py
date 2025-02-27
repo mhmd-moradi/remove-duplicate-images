@@ -235,3 +235,27 @@ def remove_duplicate_images(image_folder, unique_images, camera_id, images_by_ca
         if img not in unique_images:
             # Remove the image
             os.remove(img_path)
+
+# main
+images_by_camera_id = preprocess_dataset(image_folder)
+
+# print images resolutions for each camera id
+images_resolutions(images_by_camera_id)
+
+# print first 5 images for each camera id in images_by_camera_id
+print("\nFirst 5 images for each camera ID:")
+for camera_id, images in images_by_camera_id.items():
+    print(f"Camera ID: {camera_id}")
+    for i, (new_filename, old_filename) in enumerate(images.items()):
+        print(f"  {new_filename} -> {old_filename}")
+        if i == 4:
+            break
+
+# remove invalid images
+for camera_id in images_by_camera_id:
+    unique_images = detect_significant_changes(image_folder, images_by_camera_id, camera_id, min_contour_area, change_threshold)
+    create_video_validation(image_folder, images_by_camera_id, camera_id, unique_images)
+    print(f"Number of images per the given camera id: {len(images_by_camera_id[camera_id])}")
+    print(f"Number of unique images: {len(unique_images)}")
+    print(f"Number of duplicate images to be removed: {len(images_by_camera_id[camera_id]) - len(unique_images)}")
+    remove_duplicate_images(image_folder, unique_images, camera_id, images_by_camera_id)
