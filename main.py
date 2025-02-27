@@ -75,3 +75,22 @@ def preprocess_dataset(image_folder):
         
         # Add image to dictionary
         images_by_camera_id[camera_id][new_filename] = filename
+
+    # Sort the images within each camera_id dictionary based on the timestamp in new filenames
+    for camera_id in images_by_camera_id:
+        if camera_id == "20":
+            # Separate filenames into two lists
+            dash_images = {k: v for k, v in images_by_camera_id[camera_id].items() if k.startswith(f"c{camera_id}-")}
+            underscore_images = {k: v for k, v in images_by_camera_id[camera_id].items() if k.startswith(f"c{camera_id}_")}
+            # Sort each group based on the timestamp
+            sorted_dash_images = dict(sorted(dash_images.items(), key=lambda item: item[0].split('-')[1]))
+            sorted_underscore_images = dict(sorted(underscore_images.items(), key=lambda item: item[0].split('_')[1]))
+            # Merge the sorted dictionaries
+            sorted_images = {**sorted_dash_images, **sorted_underscore_images}
+        else:
+            # Sort the dictionary by the new filenames (timestamps)
+            sorted_images = dict(sorted(images_by_camera_id[camera_id].items(), key=lambda item: item[0].split('-')[1]))
+        # Update the images_by_camera_id dictionary with the sorted dictionary
+        images_by_camera_id[camera_id] = sorted_images
+
+    return images_by_camera_id
