@@ -223,3 +223,15 @@ def create_video_validation(image_folder, images_by_camera_id, camera_id, unique
 
     out.release()  # Save video
     print(f"Video saved as {output_video}")
+
+def remove_duplicate_images(image_folder, unique_images, camera_id, images_by_camera_id):
+    """ Remove duplicate images from the dataset. """
+    print(f"Removing duplicate images for camera ID {camera_id}...")
+    for img in tqdm(images_by_camera_id[camera_id]):
+        # Get the image path and filename
+        img_name = images_by_camera_id[camera_id][img]
+        img_path = os.path.join(image_folder, img_name)
+        # Check if this image is in the unique_images
+        if img not in unique_images:
+            # Remove the image
+            os.remove(img_path)
