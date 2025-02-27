@@ -132,3 +132,43 @@ def compare_images(image_folder, camera_id, images_by_camera_id, image_1, image_
         first_image_processed, second_image_processed, min_contour_area)
 
     return score, contours, thresh
+
+def detect_significant_changes(image_folder, images_by_camera_id, camera_id, min_contour_area, change_threshold):
+    """
+    Detects significant changes in images of a specific camera and logs the images that trigger updates.
+    """
+
+    # Dictionary to store images that trigger a reference update
+    unique_images = {}
+
+    # First reference image
+    reference_img = next(iter(images_by_camera_id[camera_id]))  # Get the first key (new filename)
+
+    # Iterate through the images for the given camera ID
+    print(f"\nDetecting significant changes for camera ID {camera_id}...")
+    for to_compare_img in tqdm(images_by_camera_id[camera_id]):
+        # Skip the reference image
+        if to_compare_img != reference_img:
+            # Compare images
+            score, _, _ = compare_images(image_folder, camera_id, images_by_camera_id, reference_img, to_compare_img, min_contour_area)
+        else:
+            # add first image of a camera id stream to unique images
+            unique_images[to_compare_img] = 0
+            continue
+
+        if score == -1:
+            print(f"Error comparing images {reference_img} and {to_compare_img}. Skipping...")
+            continue
+
+        # Print result
+        #print(f"Comparing {images_by_camera_id[camera_id][reference_img]} with {images_by_camera_id[camera_id][to_compare_img]} - Change Score: {score}")
+
+        # If the change score exceeds the threshold, update the reference image
+        if score > change_threshold:
+            #print(f"Significant change detected ({score} > {change_threshold}). Updating reference image.")
+            # Update the reference image
+            reference_img = to_compare_img
+            # Store the image and score in dictionary
+            unique_images[to_compare_img] = score
+
+    return unique_images
