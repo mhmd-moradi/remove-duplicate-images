@@ -31,3 +31,47 @@ def images_resolutions(images_by_camera_id):
                 resolutions[(image.shape[1], image.shape[0])] = 0
             resolutions[(image.shape[1], image.shape[0])] += 1
         print(f"Camera ID: {camera_id} - Image Resolutions: {resolutions} \n")
+
+def preprocess_dataset(image_folder):
+    """
+    Preprocess the images in the given folder and return a dictionary of images by camera ID.
+    """
+    print(f"Preprocessing images in {image_folder}...\n")
+    images_by_camera_id = {}
+    # Get list of files in the folder
+    filenames = os.listdir(image_folder)
+
+    for filename in tqdm(filenames, desc="Processing images", unit="file"):
+        if not filename.endswith(".png"):  # Skip non-image files
+            continue
+
+        # Match different filename formats
+        match_millis = re.match(r"c(\d+)-(\d{13})\.png", filename)  # c{camera_id}-{timestamp_ms}.png
+        match_underscore = re.match(r"c(\d+)_(\d{4})_(\d{2})_(\d{2})__(\d{2})_(\d{2})_(\d{2})\.png", filename)  # c{camera_id}_YYYY-MM-DD__HH-MM-SS.png
+        if match_millis:  # Convert ms timestamp to YYYYMMDDHHMMSS
+            camera_id, timestamp_ms = match_millis.groups()
+            timestamp = convert_to_yyyymmddhhmmss(timestamp_ms)
+        elif match_underscore:  # Convert YYYY-MM-DD__HH-MM-SS to YYYYMMDDHHMMSS
+            camera_id = match_underscore.group(1)
+            timestamp = f"{match_underscore.group(2)}{match_underscore.group(3)}{match_underscore.group(4)}" \
+                        f"{match_underscore.group(5)}{match_underscore.group(6)}{match_underscore.group(7)}"
+        else:
+            print(f"Skipping unrecognized file: {filename}")
+            continue
+        # Create the new filename in YYYYMMDDHHMMSS format
+        if camera_id == "20" and match_underscore:
+            new_filename = f"c{camera_id}_{timestamp}.png"
+        else:
+            new_filename = f"c{camera_id}-{timestamp}.png"
+
+        if camera_id not in images_by_camera_id:
+            images_by_camera_id[camera_id] = {}
+
+        # check if image is valid
+        if cv2.imread(os.path.join(image_folder, filename)) is None:
+            print(f"Invalid image: {filename}")
+            invalid_images.append(filename)
+            continue
+        
+        # Add image to dictionary
+        images_by_camera_id[camera_id][new_filename] = filename
