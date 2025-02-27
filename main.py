@@ -172,3 +172,54 @@ def detect_significant_changes(image_folder, images_by_camera_id, camera_id, min
             unique_images[to_compare_img] = score
 
     return unique_images
+
+def create_video_validation(image_folder, images_by_camera_id, camera_id, unique_images, fps=0.9):
+    """ 
+    Creates a video/slideshow with images for each camera_id showing whether they are to be removed or not. 
+    """
+    # Read the first image to get dimensions
+    first_image = cv2.imread(os.path.join(image_folder, images_by_camera_id[camera_id][next(iter(images_by_camera_id[camera_id]))]))
+    height, width, _ = first_image.shape
+
+    # Define the output video path
+    output_video =  f"validation_streams/camera_{camera_id}_validation.mp4"
+
+    # Define the video writer
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Codec for MP4
+    out = cv2.VideoWriter(output_video, fourcc, fps, (width, height))
+    
+    # Define font settings
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    font_scale = 1
+    font_color = (0, 255, 0)  # Green text
+    thickness = 1
+
+    print(f"Creating video validation for camera ID {camera_id}...")
+    for img in tqdm(images_by_camera_id[camera_id]):
+        # Get the image path and filename
+        img_name = images_by_camera_id[camera_id][img]
+        img_path = os.path.join(image_folder, img_name)
+
+        # Check if this image is in the unique_images
+        if img in unique_images:
+            font_color = (0, 255, 0)  # Green text for unique
+        else:
+           font_color = (0, 0, 255)  # Red text for duplicate
+        
+        # Load the image
+        image = cv2.imread(img_path)
+        if image is None:
+            print(f"Error loading image: {img_path}")
+            continue
+
+        # Resize image if it doesn't match the first image dimensions
+        if image.shape != first_image.shape:
+            image = cv2.resize(image, (width, height), interpolation=cv2.INTER_NEAREST)
+
+        cv2.putText(image, img_name, (50, 50), font, font_scale, font_color, thickness, cv2.LINE_AA)
+
+        # Add frame to video
+        out.write(image)  
+
+    out.release()  # Save video
+    print(f"Video saved as {output_video}")
