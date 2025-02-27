@@ -10,3 +10,8 @@ invalid_images = []
 image_folder = os.path.expanduser("~/Downloads/dataset-candidates-ml/dataset") # dataset folder example path
 min_contour_area = 200 # Minimum contour area to detect as a change
 change_threshold = 800 # Change score threshold to trigger difference detection
+
+def convert_to_yyyymmddhhmmss(timestamp_ms):
+    """Convert Unix timestamp in milliseconds to YYYYMMDDHHMMSS format."""
+    dt = datetime.datetime.fromtimestamp(int(timestamp_ms) / 1000)
+    return dt.strftime("%Y%m%d%H%M%S")
