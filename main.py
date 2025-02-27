@@ -95,22 +95,40 @@ def preprocess_dataset(image_folder):
 
     return images_by_camera_id
 
-def compare_frames_change_detection(prev_frame, next_frame, min_contour_area):
-    frame_delta = cv2.absdiff(prev_frame, next_frame)
-    thresh = cv2.threshold(frame_delta, 45, 255, cv2.THRESH_BINARY)[1]
+def compare_images(image_folder, camera_id, images_by_camera_id, image_1, image_2, min_contour_area):
+    """
+    Compare two images from the same camera ID and return the change score and contours.
+    """
+    # Get the filenames of the images
+    first_image_path = images_by_camera_id[camera_id][image_1]
+    second_image_path = images_by_camera_id[camera_id][image_2]
 
-    thresh = cv2.dilate(thresh, None, iterations=2)
-    cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,
-                            cv2.CHAIN_APPROX_SIMPLE)
-    cnts = imutils.grab_contours(cnts)
+    # Load the images
+    first_image = load_image(image_folder, first_image_path)
+    second_image = load_image(image_folder, second_image_path)
 
-    score = 0
-    res_cnts = []
-    for c in cnts:
-        if cv2.contourArea(c) < min_contour_area:
-            continue
+    if first_image is None or second_image is None:
+        print("Error loading images.")
+        return -1, [], None
 
-        res_cnts.append(c)
-        score += cv2.contourArea(c)
+    # Determine which image is larger and resize it to match the smaller one
+    if first_image.shape != second_image.shape:
+        # Get the target dimensions (smaller image)
+        target_height = min(first_image.shape[0], second_image.shape[0])
+        target_width = min(first_image.shape[1], second_image.shape[1])
 
-    return score, res_cnts, thresh
+        # Resize the larger image
+        if first_image.shape[0] > second_image.shape[0] or first_image.shape[1] > second_image.shape[1]:
+            first_image = cv2.resize(first_image, (target_width, target_height), interpolation=cv2.INTER_NEAREST)
+        else:
+            second_image = cv2.resize(second_image, (target_width, target_height), interpolation=cv2.INTER_NEAREST)
+
+    # Preprocess the images
+    first_image_processed = preprocess_image_change_detection(first_image)
+    second_image_processed = preprocess_image_change_detection(second_image)
+
+    # Compare the processed images
+    score, contours, thresh = compare_frames_change_detection(
+        first_image_processed, second_image_processed, min_contour_area)
+
+    return score, contours, thresh
